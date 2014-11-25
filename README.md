@@ -1,120 +1,114 @@
+#GAE Environment Variable Library#
 
-an endpoint to load yaml into datastore and memcache based upon appID.
+Available under the MIT (Expat) License - see bottom of README.
 
-The question then becomes about how to load these values from Datastore and map them.
+## Installation
 
+You will need to be setup with google app engine and `goapp`. See the [google app engine documentation for details](https://cloud.google.com/appengine/docs/go/gettingstarted/introduction)
 
-Must pattern ..
-
-
+Dependencies are installed via:
+```bash
+make deps
 ```
 
-import (
-    "l"
-)
-
-//option 1 - one value returned per call
-client.Post(l(ctx, "QUANTUM_VIEW_URL")... )
-
-//option 2 - return a configuration struct which has every value mapped for the application
-
-```
-
-
-
-```
-    
-
-```
-
-
-
-
-
-A configuration layer for variables which vary according to environment, except/ using GAE's `[appengine.AppID(ctx)](https://cloud.google.com/appengine/docs/go/reference#AppID)` to support the generic idea of server environments (production, staging, etc.).
-
-
-import(
-    env "gae_env"
-)
-
-
-func handler(c appengine.Context, w http.ResponseWriter, r *http.Request) {
-    
-}
-
-func init() {
-    env.load()
-}
-
-in init use env.load() ...
-
-then, when you
-
-
-
-synonyms - so generic environments can be used
-
-
-
-GAE App
-
-
-appid-env
-
-throw away the language of "production", "staging". This is application aware env vars.
-
-map, err := env.scan(ctx)
-
-
-
-```yaml
-rockfish-project:
-rockfish-staging:
-
-```
+## Example and Usage
 
 ```golang
+package main
 
-import(
-    "env"
-    "appengine"
+import (
+	"github.com/rockpoollabs/env"
+	"os"
+	"log"
 )
 
-environment, err := env.Is("production") 
+func main() {
+	//Set the env file
+    env := Env
+    err := env.Load("./environment.json")
 
+    //Get current environment
+    name := env.Name(ctx) 
+    log.Printf("Environment: %v",msg) //prints "Environment: testing" in testing
 
+	//Get environment variable
+	msg, err := env.Get(ctx, "Message")
+	log.Printf("Message: %v",msg) // prints "Message: TestingMsg" in testing
+	
+	///...
+}
 ```
 
+The corresponding environment.json file at the top level of the  would be:
+```json
+{
+    "mappings" : {
+        "production" : "App-Prod",
+        "staging" : "App-Stage",
+        "testing" : "App-Test"
+    },
+	"default" : {
+		"Message" : "DefaultMsg"
+	},
+	"production" : {
+		"Message" : "ProductionMsg"
+	},
+	"staging" : {
+		"Message" : "StagingMsg"
+	},
+	"testing" : {
+		"Message" : "TestingMsg"
+	}
+}
+```
 
+The tests for this project use the sample-environment.json file. You can look at that for another example.
 
+## Godoc
+[http://godoc.org/github.com/rockpoollabs/environment](http://godoc.org/github.com/rockpoollabs/environment)
+TODO: Get correct address when it's live
 
-import "env"
+## Testing
 
+```bash
+make test
+make live-test //then browse to http://localhost:8080/
+```
 
+## Formatting
 
-need a way to declare environments dynamically - e.g. staging2, integration, etc..
+```bash
+make fmt
+```
 
+## Development
 
-url, err := env(c, "QUANTUM_URL")
+Ensure that you are running GO 1.2.1
 
-internally env will 
+## Contributing
 
+You're welcome to make a Pull Request; please include tests for anything you want to contribute.
 
+## MIT License
 
-env.IsProduction
-env.IsStaging
-env.IsTest
-env.IsDevelopment
+The MIT License (MIT)
 
-the above call appengine.
+Copyright (c) 2014 Rockpool Labs
 
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
 
-Write the yaml with environment vars:
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
 
-production:
-    - QUANTUM_VIEW_URL: "http://prod"
-staging:
-    - QUANTUM_VIEW_URL: "http://staging"
-
-  
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.

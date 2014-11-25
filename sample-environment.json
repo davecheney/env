@@ -1,0 +1,28 @@
+{
+    "mappings" : {
+        "production" : "App-Prod",
+        "staging" : "App-Stage",
+        "testing" : "App-Test"
+    },
+	"default" : {
+		"message" : "I am a default Msg",
+		"greeting" : "default greeting",
+		"tolerance" : 0.1,
+		"acceptableRank" : ["1","2","3"]
+	},
+	"production" : {
+		"message" : "I am a production Msg",
+		"tolerance" : 0.12,
+		"acceptableRank" : ["2","3","4"]
+	},
+	"staging" : {
+		"message" : "I am a staging Msg",
+		"tolerance" : 0.13,
+		"acceptableRank" : ["5","6","7"]
+	},
+	"testing" : {
+		"message" : "I am a testing Msg",
+		"tolerance" : 0.14,
+		"acceptableRank" : ["8","9","10"]
+	}
+}
