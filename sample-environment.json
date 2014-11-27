@@ -2,7 +2,7 @@
     "mappings" : {
         "production" : "App-Prod",
         "staging" : "App-Stage",
-        "testing" : "App-Test"
+        "test" : "App-Test"
     },
 	"default" : {
 		"message" : "I am a default Msg",
@@ -20,7 +20,7 @@
 		"tolerance" : 0.13,
 		"acceptableRank" : ["5","6","7"]
 	},
-	"testing" : {
+	"test" : {
 		"message" : "I am a testing Msg",
 		"tolerance" : 0.14,
 		"acceptableRank" : ["8","9","10"]
