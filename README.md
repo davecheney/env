@@ -29,7 +29,7 @@ func SomeHandler(c appengine.Context, w http.ResponseWriter, r *http.Request) {
 	}
 
 ```
-As well we being cleaner, it means you can meaningfully refer to environments in your code without having to hardcode the name of the Google Cloud Project.
+As well as being cleaner, it means you can meaningfully refer to environments in your code without having to hardcode the name of the Google Cloud Project.
 
 ### Environment Specific Variables
 
