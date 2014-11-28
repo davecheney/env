@@ -27,6 +27,7 @@ func Load(relativePathToFile string) error {
 	if err != nil {
 		return err
 	}
+	defer r.Close()
 
 	d := json.NewDecoder(r)
 	Env = make(map[string]interface{})
