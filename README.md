@@ -101,8 +101,7 @@ func init() {
 Also see Configuration below.
 
 ## Godoc
-[http://godoc.org/github.com/rockpoollabs/environment](http://godoc.org/github.com/rockpoollabs/environment)
-TODO: Get correct address when it's live
+[http://godoc.org/github.com/rockpoollabs/env](http://godoc.org/github.com/rockpoollabs/env)
 
 ## Configuration
 
