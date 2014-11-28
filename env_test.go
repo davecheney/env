@@ -12,18 +12,16 @@ func TestLoad(t *testing.T) {
 
 	c.Convey("With a json file, it will load it into memory", t, func() {
 		fileLocation := "./sample-environment.json"
-		env := Env
-		err := env.Load(fileLocation)
+		err := Load(fileLocation)
 
 		c.So(err, c.ShouldBeNil)
-		c.So(env.emap, c.ShouldNotBeNil)
-		c.So(env.raw, c.ShouldNotBeNil)
+		c.So(Env.emap, c.ShouldNotBeNil)
+		c.So(Env.raw, c.ShouldNotBeNil)
 	})
 
 	c.Convey("With a json file missing mappings it errors", t, func() {
 		fileLocation := "./mappings-missing.json"
-		env := Env
-		err := env.Load(fileLocation)
+		err := Load(fileLocation)
 		c.So(err, c.ShouldNotBeNil)
 	})
 }
@@ -31,45 +29,44 @@ func TestLoad(t *testing.T) {
 func TestGet(t *testing.T) {
 	ctx := ContextMock{}
 	ctx.SetAppId(TESTING_ENV_NAME)
-	env := Env
 
 	c.Convey("Before loading the json file", t, func() {
-		_, err := env.Get(ctx, "message")
-		c.So(err, c.ShouldNotBeNil)
+		_, ok := GetOk(ctx, "message")
+		c.So(ok, c.ShouldBeFalse)
 	})
 
 	c.Convey("With a complete loaded json file", t, func() {
 		fileLocation := "./sample-environment.json"
-		err := env.Load(fileLocation)
+		err := Load(fileLocation)
 		c.So(err, c.ShouldBeNil)
 
 		c.Convey("It retrieves the correct vars", func() {
-			msg, err := env.Get(ctx, "message")
-			c.So(err, c.ShouldBeNil)
+			msg, ok := GetOk(ctx, "message")
+			c.So(ok, c.ShouldBeTrue)
 			c.So(msg, c.ShouldEqual, "I am a testing Msg")
-			msg, err = env.Get(ctx, "tolerance")
-			c.So(err, c.ShouldBeNil)
+			msg, ok = GetOk(ctx, "tolerance")
+			c.So(ok, c.ShouldBeTrue)
 			c.So(msg, c.ShouldEqual, 0.14)
-			msg, err = env.Get(ctx, "acceptableRank")
-			c.So(err, c.ShouldBeNil)
+			msg, ok = GetOk(ctx, "acceptableRank")
+			c.So(ok, c.ShouldBeTrue)
 			c.So(msg, c.ShouldResemble, []interface{}{"8","9","10"})
 		})
 
-		c.Convey("It errors if no var is in json", func() {
-			_, err := env.Get(ctx, "UnknownVar")
-			c.So(err, c.ShouldNotBeNil)
+		c.Convey("ok is false if no var is in json", func() {
+			_, ok := GetOk(ctx, "UnknownVar")
+			c.So(ok, c.ShouldBeFalse)
 		})
 
 		c.Convey("It retrieves a default var if the app is unknown", func() {
 			ctx.SetAppId("Unknown-AppId")
-			msg, err := env.Get(ctx, "message")
-			c.So(err, c.ShouldBeNil)
+			msg, ok := GetOk(ctx, "message")
+			c.So(ok, c.ShouldBeTrue)
 			c.So(msg, c.ShouldEqual, "I am a default Msg")
 		})
 		c.Convey("It uses default vars if there is no match in the current env", func() {
 			ctx.SetAppId(TESTING_ENV_NAME)
-			msg, err := env.Get(ctx, "greeting")
-			c.So(err, c.ShouldBeNil)
+			msg, ok := GetOk(ctx, "greeting")
+			c.So(ok, c.ShouldBeTrue)
 			c.So(msg, c.ShouldEqual, "default greeting")
 		})
 	})
@@ -77,23 +74,21 @@ func TestGet(t *testing.T) {
 	c.Convey("With a json file missing default properties", t, func() {
 		ctx.SetAppId(TESTING_ENV_NAME)
 		fileLocation := "./missing-default.json"
-		env := Env
-		err := env.Load(fileLocation)
+		err := Load(fileLocation)
 		c.So(err, c.ShouldBeNil)
 
 		c.Convey("It retrieves an available var", func() {
-			msg, err := env.Get(ctx, "message")
-			c.So(err, c.ShouldBeNil)
+			msg, ok := GetOk(ctx, "message")
+			c.So(ok, c.ShouldBeTrue)
 			c.So(msg, c.ShouldEqual, "I am a testing Msg")
 		})
 
 		c.Convey("It errors if both the environment is unknown and no default vars are present", func() {
 			ctx.SetAppId("Unknown-AppId")
-			_, err := env.Get(ctx, "Message")
+			_, err := GetOk(ctx, "Message")
 			c.So(err, c.ShouldNotBeNil)
 		})
 	})
-
 }
 
 func TestName(t *testing.T) {
@@ -101,24 +96,44 @@ func TestName(t *testing.T) {
 	ctx.SetAppId(TESTING_ENV_NAME)
 
 	fileLocation := "./sample-environment.json"
-	env := Env
 
 	c.Convey("With a complete json file and mapping it retrieves the correct env name", t, func() {
-		err := env.Load(fileLocation)
+		err := Load(fileLocation)
 		c.So(err, c.ShouldBeNil)
 
-		name := env.Name(ctx)
-		c.So(name, c.ShouldEqual, "testing")
+		name := Name(ctx)
+		c.So(name, c.ShouldEqual, "test")
 	})
 
 	c.Convey("With an unknown project id it returns the default environment", t, func() {
-		err := env.Load(fileLocation)
+		err := Load(fileLocation)
 		c.So(err, c.ShouldBeNil)
 
 		ctx.SetAppId("Unknown-AppId")
-		name := env.Name(ctx)
+		name := Name(ctx)
 		c.So(name, c.ShouldEqual, "default")
 	})
+}
+
+func TestIs(t *testing.T) {
+	ctx := ContextMock{}
+	ctx.SetAppId(TESTING_ENV_NAME)
+	Load("./sample-environment.json")
+
+	c.Convey("it returns accurate environment name mappings", t, func() {
+		c.So(Is(ctx, "test"), c.ShouldBeTrue)
+	})
+}
+
+func TestMustLoad(t *testing.T) {
+	defer func(){
+		r := recover()
+		if r == nil {
+			t.Fail()
+		}
+	}()
+
+	MustLoad("./nonexistent.json")
 }
 
 type ContextMock struct {

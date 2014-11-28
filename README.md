@@ -2,7 +2,109 @@
 
 Available under the MIT (Expat) License - see bottom of README.
 
+## Rationale
+
+### Mapping GAE Projects to Programming Environments
+
+A simpler way of thinking about programming environments when working with `appengine.Context' AppIDs (or Project IDs) on [Google's Cloud Platform, GAE](https://cloud.google.com/appengine/docs)
+
+So, instead of
+
+```
+func SomeHandler(c appengine.Context, w http.ResponseWriter, r *http.Request) {
+	if appengine.AppID(c) == "rockpool-production" {
+		//do this
+	} else if appengine.AppID(c) == "rockpool-staging" {
+		//do that
+	}
+```
+you can do this
+
+```
+func SomeHandler(c appengine.Context, w http.ResponseWriter, r *http.Request) {
+	if env.Is("production") {
+		//do this
+	} else env.Is("staging") {
+		//do that
+	}
+
+```
+As well we being cleaner, it means you can meaningfully refer to environments in your code without having to hardcode the name of the Google Cloud Project.
+
+### Environment Specific Variables
+
+You may then access environment specific variables with `env.Get(c, appengine.Context, key string)` or `env.GetOk(c, appengine.Context, key string)`:
+
+```
+func SomeHandler(c appengine.Context, w http.ResponseWriter, r *http.Request) {
+	db_password := env.Get(c, "db_password").(string)
+	//or, use the GetOk pattern
+	db_password2, ok := env.GetOk(c, "db_password")
+}
+```
+
+### Example JSON Config
+
+```
+{
+    "mappings" : {
+        "production" : "rockpool-production",
+        "staging" : "rockpool-staging",
+        "test" : "rockpool-test"
+    },
+	"default" : {
+		"question" : "How about a nice game of chess?",
+	},
+	"production" : {
+		"message" : "I am a production Msg",
+		"tolerance" : 0.12,
+		"acceptableRank" : ["2","3","4"]
+	},
+	"staging" : {
+		"message" : "I am a staging Msg",
+		"tolerance" : 0.13,
+		"acceptableRank" : ["5","6","7"]
+		"question" : "How about a nice game of chess (in staging)?",
+	}
+```
+
+
+### The default stanza
+
+Default variables mean that every environment will gain this value, unless they choose you choose to override it within the environment's stanza.
+
+In the example configuration above, production will have a question with `"How about a nice game of chess?"` as its value but staging will have `"How about a nice game of chess (in staging)?"`.
+
+### How to load the JSON config
+
+Typically setup is down within a init function called early in the lifecycle of one of your packages.
+
+Use `MustLoad` to create a runtime panic if the JSON config cannot be loaded.
+Use `Load` to return an error to handle yourself if the JSON config cannot be loaded.
+
+```
+func init() {
+	env.MustLoad("./environment.json")
+	// or ...
+	err := env.Load("./environment.json")
+
+	if err != nil {
+		...
+	}
+}
+```
+
 ## Installation
+
+`goapp get github.com/rockpoollabs/env`
+
+Also see Configuration below.
+
+## Godoc
+[http://godoc.org/github.com/rockpoollabs/environment](http://godoc.org/github.com/rockpoollabs/environment)
+TODO: Get correct address when it's live
+
+## Configuration
 
 You will need to be setup with google app engine and `goapp`. See the [google app engine documentation for details](https://cloud.google.com/appengine/docs/go/gettingstarted/introduction)
 
@@ -10,63 +112,6 @@ Dependencies are installed via:
 ```bash
 make deps
 ```
-
-## Example and Usage
-
-```golang
-package main
-
-import (
-	"github.com/rockpoollabs/env"
-	"os"
-	"log"
-)
-
-func main() {
-	//Set the env file
-    env := Env
-    err := env.Load("./environment.json")
-
-    //Get current environment
-    name := env.Name(ctx) 
-    log.Printf("Environment: %v",msg) //prints "Environment: testing" in testing
-
-	//Get environment variable
-	msg, err := env.Get(ctx, "Message")
-	log.Printf("Message: %v",msg) // prints "Message: TestingMsg" in testing
-	
-	///...
-}
-```
-
-The corresponding environment.json file at the top level of the  would be:
-```json
-{
-    "mappings" : {
-        "production" : "App-Prod",
-        "staging" : "App-Stage",
-        "testing" : "App-Test"
-    },
-	"default" : {
-		"Message" : "DefaultMsg"
-	},
-	"production" : {
-		"Message" : "ProductionMsg"
-	},
-	"staging" : {
-		"Message" : "StagingMsg"
-	},
-	"testing" : {
-		"Message" : "TestingMsg"
-	}
-}
-```
-
-The tests for this project use the sample-environment.json file. You can look at that for another example.
-
-## Godoc
-[http://godoc.org/github.com/rockpoollabs/environment](http://godoc.org/github.com/rockpoollabs/environment)
-TODO: Get correct address when it's live
 
 ## Testing
 
@@ -83,7 +128,12 @@ make fmt
 
 ## Development
 
-Ensure that you are running GO 1.2.1
+Ensure that you are running Goapp. This was developed on goapp 1.9.15 but should work with earlier versions supporting `appengine.AppId`.
+
+```
+	goapp version
+	go version go1.2.1 (appengine-1.9.15) darwin/amd64
+```
 
 ## Contributing
 
