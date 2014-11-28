@@ -1,3 +1,10 @@
+/*
+	Google App Engine Environment Variable Library.
+
+	A simpler way of thinking about programming environments when working with `appengine.Context' AppIDs (or Project IDs) on Google's Cloud Platform, GAE
+	
+	See: https://github.com/rockpoollabs/env for README and examples.
+*/
 package env
 
 import (
