@@ -1,9 +1,11 @@
 package env
 
 import (
-	"appengine_internal"
-	c "github.com/smartystreets/goconvey/convey"
 	"testing"
+
+	c "github.com/smartystreets/goconvey/convey"
+
+	"appengine_internal"
 )
 
 const TESTING_ENV_NAME = "App-Test"
@@ -11,16 +13,15 @@ const TESTING_ENV_NAME = "App-Test"
 func TestLoad(t *testing.T) {
 
 	c.Convey("With a json file, it will load it into memory", t, func() {
-		fileLocation := "./sample-environment.json"
+		fileLocation := "sample-environment.json"
 		err := Load(fileLocation)
 
 		c.So(err, c.ShouldBeNil)
-		c.So(Env.emap, c.ShouldNotBeNil)
-		c.So(Env.raw, c.ShouldNotBeNil)
+		c.So(Env, c.ShouldNotBeNil)
 	})
 
 	c.Convey("With a json file missing mappings it errors", t, func() {
-		fileLocation := "./mappings-missing.json"
+		fileLocation := "mappings-missing.json"
 		err := Load(fileLocation)
 		c.So(err, c.ShouldNotBeNil)
 	})
@@ -49,7 +50,7 @@ func TestGet(t *testing.T) {
 			c.So(msg, c.ShouldEqual, 0.14)
 			msg, ok = GetOk(ctx, "acceptableRank")
 			c.So(ok, c.ShouldBeTrue)
-			c.So(msg, c.ShouldResemble, []interface{}{"8","9","10"})
+			c.So(msg, c.ShouldResemble, []interface{}{"8", "9", "10"})
 		})
 
 		c.Convey("ok is false if no var is in json", func() {
@@ -126,7 +127,7 @@ func TestIs(t *testing.T) {
 }
 
 func TestMustLoad(t *testing.T) {
-	defer func(){
+	defer func() {
 		r := recover()
 		if r == nil {
 			t.Fail()

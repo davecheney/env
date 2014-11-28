@@ -2,65 +2,49 @@
 	Google App Engine Environment Variable Library.
 
 	A simpler way of thinking about programming environments when working with `appengine.Context' AppIDs (or Project IDs) on Google's Cloud Platform, GAE
-	
+
 	See: https://github.com/rockpoollabs/env for README and examples.
 */
 package env
 
 import (
-	"appengine"
 	"encoding/json"
-	"errors"
-	"io/ioutil"
 	"fmt"
-)
+	"os"
 
-type env struct {
-	emap map[string]interface{}
-	raw  []byte
-}
+	"appengine"
+)
 
 const MAPPING_KEY_NAME = "mappings"
 const DEFAULT_MAP_NAME = "default"
 
-var Env env
+var Env map[string]interface{}
 
-func init() {
-	Env = env{emap: map[string]interface{}{}}
-}
-
-/*
-	Loads the config file from relativePathToFile and stores it in Env.
-	Returns an error if this wasn't possible.
-*/
-func Load(relativePathToFile string) (err error) {
-	Env.emap = map[string]interface{}{}
-	Env.raw = []byte{}
-
-	data, err := ioutil.ReadFile(relativePathToFile)
+// Loads the config file from relativePathToFile and stores it in Env.
+// Returns an error if this wasn't possible.
+func Load(relativePathToFile string) error {
+	r, err := os.Open(relativePathToFile)
 	if err != nil {
 		return err
 	}
 
-	Env.raw = data
-	err = json.Unmarshal(Env.raw, &Env.emap)
+	d := json.NewDecoder(r)
+	Env = make(map[string]interface{})
+	err = d.Decode(&Env)
 	if err != nil {
 		return err
 	}
 
 	//Check for mappings, error if they're not present
-	_, ok := Env.emap[MAPPING_KEY_NAME]
+	_, ok := Env[MAPPING_KEY_NAME]
 	if !ok {
-		errorMsg := fmt.Sprintf("JSON Malformed. Missing top level property named '%v' to determine projectId", MAPPING_KEY_NAME)
-		return errors.New(errorMsg)
+		return fmt.Errorf("JSON Malformed. Missing top level property named %q to determine projectId", MAPPING_KEY_NAME)
 	}
 
 	return nil
 }
 
-/*
-	Must with Load.
-*/
+// MustLoad loads the config file from relativePathToFile and panics if an error occurs.
 func MustLoad(relativePathToFile string) {
 	err := Load(relativePathToFile)
 	if err != nil {
@@ -68,60 +52,44 @@ func MustLoad(relativePathToFile string) {
 	}
 }
 
-/*
-	Retrieves an environment variable from the loaded json
-	Returns a boolean if this wasn't possible.
-*/
+// GetOk retrieves an environment variable from the loaded json.
+// Returns a boolean if this wasn't possible.
 func GetOk(c appengine.Context, field string) (interface{}, bool) {
 	currentEnvName, err := getCurrentEnvName(c)
 	if err != nil {
 		return "", false
 	}
 	val, err := getKeyFromEnv(c, currentEnvName, field)
-	if (err != nil && currentEnvName != DEFAULT_MAP_NAME) {
+	if err != nil && currentEnvName != DEFAULT_MAP_NAME {
 		//Try the default map if we can't find it in the current map
 		val, err = getKeyFromEnv(c, DEFAULT_MAP_NAME, field)
 		if err != nil {
 			return "", false
 		}
-
 		return val, true
-
-	} else if (err != nil) {
-		return "", false
 	}
 
-	return val, true
+	return val, err == nil
 }
 
-/*
-	Proxies a call to `GetOk`, suppressing any error (the client will have to deal with this).
- */
-
-func Get(c appengine.Context, key string) (interface{}) {
+// Get proxies a call to GetOk, suppressing any error (the client will have to deal with this).
+func Get(c appengine.Context, key string) interface{} {
 	val, _ := GetOk(c, key)
 	return val
 }
 
-
-/*
-	Determines the currently running environment name, ie "Production"
-	If an unknown app id is used, it attempts to get the default environment.
-	NOTE: If the default environment does not exist, the error is suppressed.
-*/
-
+// Name fetermines the currently running environment name, ie "Production"
+// If an unknown app id is used, it attempts to get the default environment.
+// NOTE: If the default environment does not exist, the error is suppressed.
 func Name(c appengine.Context) string {
 	currentEnvName, _ := getCurrentEnvName(c)
 	return currentEnvName
 }
 
-/*
-	Boolean check for which environment this is in. For example: Is(c, "production")
-*/
+// Is checks which environment this is in. For example: Is(c, "production")
 func Is(c appengine.Context, envName string) bool {
 	return Name(c) == envName
 }
-
 
 func getKeyFromEnv(c appengine.Context, envName string, field string) (interface{}, error) {
 	currentEnvData, err := getEnvData(c, envName)
@@ -138,18 +106,16 @@ func getKeyFromEnv(c appengine.Context, envName string, field string) (interface
 		if err != nil {
 			return "", err
 		}
-		errorMsg := fmt.Sprintf("Cannot retrieve environment variable. Missing field %v for environment %v with App Id %v", field, currentEnvName, currentAppId)
-		return "", errors.New(errorMsg)
+		return "", fmt.Errorf("Cannot retrieve environment variable. Missing field %q for environment %q with App Id %q", field, currentEnvName, currentAppId)
 	}
 	return retrievedKey, nil
 }
 
 func getEnvData(c appengine.Context, currentEnvName string) (interface{}, error) {
-	currentEnvInterface, ok := Env.emap[currentEnvName]
+	currentEnvInterface, ok := Env[currentEnvName]
 	if !ok {
 		currentAppId := appengine.AppID(c)
-		errorMsg := fmt.Sprintf("JSON Malformed. Missing top level property named %v associated with current App Id, %v", currentEnvName, currentAppId)
-		return map[string]interface{}{}, errors.New(errorMsg)
+		return nil, fmt.Errorf("JSON Malformed. Missing top level property named %q associated with current App Id %q", currentEnvName, currentAppId)
 	}
 	return currentEnvInterface, nil
 }
@@ -157,11 +123,10 @@ func getEnvData(c appengine.Context, currentEnvName string) (interface{}, error)
 func getCurrentEnvName(c appengine.Context) (string, error) {
 	currentAppId := appengine.AppID(c)
 
-	envInterface, ok := Env.emap[MAPPING_KEY_NAME]
+	envInterface, ok := Env[MAPPING_KEY_NAME]
 
 	if !ok {
-		errorMsg := fmt.Sprintf("JSON Malformed. Missing top level property named '%v' to determine projectId", MAPPING_KEY_NAME)
-		return "", errors.New(errorMsg)
+		return "", fmt.Errorf("JSON Malformed. Missing top level property named %q to determine projectId", MAPPING_KEY_NAME)
 	}
 
 	envs := envInterface.(map[string]interface{})
